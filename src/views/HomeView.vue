@@ -10,6 +10,8 @@ const nextCardValue = ref(null)
 const didPlayerWin = ref(null)
 const isDraw = ref(false)
 
+const previousPile = ref(null)
+
 const faceCardValues = {
   JACK: 12,
   QUEEN: 13,
@@ -75,6 +77,38 @@ async function handlePlayerPrediction(isNextCardHigherPrediction) {
     deckId.value = deckData.deck_id
     remainingCards.value = deckData.remaining
   }
+
+  await addPreviousCardToPile(currentCard.value.code)
+  const pileData = await getPile()
+  previousPile.value = pileData.piles.previousCardPile.cards
+}
+
+async function addPreviousCardToPile(cards) {
+  return new Promise((resolve, reject) => {
+    fetch(
+      `https://deckofcardsapi.com/api/deck/${deckId.value}/pile/previousCardPile/add/?cards=${cards}`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        resolve(data)
+      })
+      .catch((error) => {
+        reject(error)
+      })
+  })
+}
+
+async function getPile() {
+  return new Promise((resolve, reject) => {
+    fetch(`https://deckofcardsapi.com/api/deck/${deckId.value}/pile/previousCardPile/list`)
+      .then((response) => response.json())
+      .then((data) => {
+        resolve(data)
+      })
+      .catch((error) => {
+        reject(error)
+      })
+  })
 }
 
 onMounted(async () => {
@@ -108,9 +142,14 @@ onMounted(async () => {
       <h2 class="text-2xl font-bold">It's a draw! 🤷‍♂️</h2>
     </div>
 
-    <div v-if="currentCard" class="card w-96 bg-base-100 shadow-xl">
+    <div v-if="currentCard" class="card bg-base-100 shadow-xl">
       <figure class="px-10 pt-10">
         <img :src="currentCard.image" :alt="currentCard.code" class="rounded-xl" />
+        <img
+          src="https://deckofcardsapi.com/static/img/back.png"
+          :alt="currentCard.code"
+          class="rounded-xl"
+        />
       </figure>
       <div class="card-body items-center text-center">
         <h2 class="card-title">{{ currentCard.value }} {{ currentCard.suit }}</h2>
@@ -126,4 +165,9 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+  <ul>
+    <li v-for="card in previousPile" :key="card.code">
+      <img :src="card.image" :alt="card.code" />
+    </li>
+  </ul>
 </template>
